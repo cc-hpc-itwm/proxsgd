@@ -51,7 +51,7 @@ def start_dense201(lr,dec,gam,clip_bound):
     model = model.cuda()
 
     #Initialize the optimizer with the given parameters
-    optimizer = ProxSGD(model.parameters(),lr=lr,epsilon_decay=0.5,rho_decay=0.5,weight_decay=dec,gamma=gam, clip_bounds=clip_bound)
+    optimizer = ProxSGD(model.parameters(),epsilon=lr,epsilon_decay=0.5981,rho_decay=0.5,mu=dec,gamma=gam, clip_bounds=clip_bound)
 
     #Remove weight regulatization in Pytorch as ProxSGD already has it implemented
     weight_reg = None
@@ -152,8 +152,9 @@ def start_dense201(lr,dec,gam,clip_bound):
         sparsity1, sparsity2 = save_sparsity(model)
         sparsity_x.append(sparsity1)
         sparsity_y.append(sparsity2)
-        #save the network weights
-        torch.save(model.state_dict(),"Densenet_weight_iter"+str(ep+1))
+
+    #save the network weights
+    torch.save(model.state_dict(),"Densenet_weight_final")
 
     plot_sparsity(model,"plot_Densenet_sparsity_"+str(ep)+".png")
 
@@ -192,4 +193,4 @@ def start_dense201(lr,dec,gam,clip_bound):
 
 
 #Start a run
-start_dense201(0.15,1e-5,4,(None,None))
+start_dense201(0.2122,1e-5,4,(None,None))
