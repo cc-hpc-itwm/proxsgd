@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from models.densenet import densenet201
 
 
-def start_dense201(epsilon,mu,gamma,clip_bound):
+def start_dense201(epsilon, epsilon_decay, rho, rho_decay, mu):
 
     def get_param_vec(model):
         #flatten parameters of the network into a numpy array
@@ -51,7 +51,7 @@ def start_dense201(epsilon,mu,gamma,clip_bound):
     model = model.cuda()
 
     #Initialize the optimizer with the given parameters
-    optimizer = ProxSGD(model.parameters(),epsilon=epsilon,epsilon_decay=0.5981,rho=0.9,rho_decay=0.5,mu=mu,gamma=gamma, clip_bounds=clip_bound)
+    optimizer = ProxSGD(model.parameters(), epsilon=epsilon, epsilon_decay=epsilon_decay, rho=rho, rho_decay=rho_decay, mu=mu)
 
     #Remove weight regulatization in Pytorch as ProxSGD already has it implemented
     weight_reg = None
@@ -193,4 +193,4 @@ def start_dense201(epsilon,mu,gamma,clip_bound):
 
 
 #Start a run
-start_dense201(0.2122,1e-5,4,(None,None))
+start_dense201(epsilon=0.2122, epsilon_decay=0.5981, rho=0.9, rho_decay=0.5, mu=1e-5)

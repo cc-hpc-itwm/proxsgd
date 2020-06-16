@@ -19,16 +19,14 @@ class ProxSGD(Optimizer):
         delta (float, optional): term added to the denominator to improve
             numerical stability (default: 1e-8)
         mu (float, optional): regularization constant mu (for L1 penalty) (default: 1e-4)
-        gamma (integer, optional): offset in time for decaying the learning rate as well as the momentum term
+        step_offset (integer, optional): offset in time for decaying the learning rate as well as the momentum term
             (default: 4)
     """
 
-    def __init__(self, params, epsilon=0.06, epsilon_decay=0.5, rho=0.9, rho_decay=0.5, beta=0.999, delta=1e-8,
-                 mu=None, gamma=4, clip_bounds=(None,None)):
+    def __init__(self, params, epsilon=0.06, epsilon_decay=0.5, rho=0.9, rho_decay=0.5, step_offset=4, beta=0.999, delta=1e-8,
+                 mu=None, clip_bounds=(None,None)):
         if not 0.0 <= epsilon:
             raise ValueError("Invalid initial learning rate: {}".format(epsilon))
-        if not 0.0 <= delta:
-            raise ValueError("Invalid delta value: {}".format(delta))
         if not 0.0 <= epsilon_decay < 1.0:
             raise ValueError("Invalid epsilon decay parameter: {}".format(epsilon_decay))
         if not 0.0 <= rho_decay < 1.0:
@@ -37,9 +35,11 @@ class ProxSGD(Optimizer):
             raise ValueError("Invalid rho parameter: {}".format(rho))
         if not 0.0 <= beta < 1.0:
             raise ValueError("Invalid beta parameter: {}".format(beta))
+        if not 0.0 <= delta:
+            raise ValueError("Invalid delta value: {}".format(delta))
 
         defaults = dict(epsilon=epsilon, epsilon_decay=epsilon_decay, rho=rho, rho_decay=rho_decay, beta=beta, delta=delta,
-                        mu=mu, gamma=gamma, clip_bounds=clip_bounds)
+                        mu=mu, step_offset=step_offset, clip_bounds=clip_bounds)
         super(ProxSGD, self).__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -82,11 +82,11 @@ class ProxSGD(Optimizer):
                 state['step'] += 1
                 
 
-                epsilon_t = group['epsilon'] / ((state['step'] + group['gamma'])**group['epsilon_decay'])
-                rho_t     = group['rho'] / ((state['step'] + group['gamma'])**group['rho_decay'])
+                epsilon_t = group['epsilon'] / ((state['step'] + group['step_offset'])**group['epsilon_decay'])
+                rho_t     = group['rho'] / ((state['step'] + group['step_offset'])**group['rho_decay'])
 
                 # Decay the first and second moment running average coefficient
-                v_t.mul_(rho_t).add_(1 - rho_t, grad)
+                v_t.mul_(1 - rho_t).add_(rho_t, grad)
                 r_t.mul_(group['beta']).addcmul_(1 - group['beta'], grad, grad)
 
                 bias_correction = 1 - group['beta'] ** (state['step']+1)
