@@ -51,11 +51,7 @@ def start_dense201(epsilon, epsilon_decay, rho, rho_decay, mu):
     model = model.cuda()
 
     #Initialize the optimizer with the given parameters
-<<<<<<< HEAD
     optimizer = ProxSGD(model.parameters(), epsilon=epsilon, epsilon_decay=epsilon_decay, rho=rho, rho_decay=rho_decay, mu=mu)
-=======
-    optimizer = ProxSGD(model.parameters(), epsilon=epsilon, epsilon_decay=epsilon_decay, rho=rho, rho_decay=rho_decay, mu=mu, gamma=gamma, clip_bounds=clip_bounds)
->>>>>>> 1e2d3b3ccf48088f70798cf4eb315a9b9610f1f8
 
     #Remove weight regulatization in Pytorch as ProxSGD already has it implemented
     weight_reg = None
