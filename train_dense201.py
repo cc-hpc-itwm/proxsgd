@@ -221,6 +221,6 @@ def train_dense201(epsilon, epsilon_decay, rho, rho_decay, mu, num_epochs=60, ru
 if __name__ == "__main__":
     num_runs = 1 # number of experiments
     start_run = 1
-    num_epochs = 1 # number of epochs
+    num_epochs = 60 # number of epochs
     for run in range(start_run, num_runs+1, 1):
         train_dense201(epsilon=0.2122, epsilon_decay=0.5981, rho=0.9, rho_decay=0.5, mu=1e-5, num_epochs=num_epochs, run=run)
