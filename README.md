@@ -7,15 +7,15 @@ by *Yang Yang, Yaxiong Yuan, Avraan Chatzimichailidis, Ruud JG van Sloun, Lei Le
 
 This repository contains the simulations in Section 4.2.
 
-# Baseline
-This branch is created to train model with SGD optimizer.
+# Hyperparameter Search
+This branch is created for Hyperparameter search using Tree Structured Parzen Estimator based on Bayes Theorem.
 
 ## Setup
 Kindly follow the following steps to get experimental results.
 
-1. Create pytorch enviornment.
+1. Install Optuna in pytorch enviornment.
 2. Update config.py with required settings.
-3. Change variable 'lr' values for different learning rates and Run main_search_baseline.py 
+3. Run main_bayesian_search.py 
 4. Results can be seen in directory mentioned in config.py
 
 
