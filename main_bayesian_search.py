@@ -13,7 +13,7 @@ import math
 import optuna
 import torch
 import torch.nn as nn
-import config_tpes as config
+import config
 import csv
 from optuna.samplers import TPESampler
 from os import path, makedirs
