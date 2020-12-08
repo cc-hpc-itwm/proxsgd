@@ -1,5 +1,5 @@
 dataset='CIFAR100'                                                        # Dataset to used whether CIFAR100 or MNIST
-result_dir= 'results_cma_mu_search/'                                      # Result directory to save all the experiments
+result_dir= 'results_baseline/'                                           # Result directory to save all the experiments
 network='densenet'                                                        # Network to be trained densenet/mlp
 filename = 'checkpoint.pth.tar'                                           # Filename to save trained model
 batch_size=128                                                            # Batch size 
@@ -10,5 +10,6 @@ mu=1e-5                                                                   # Regu
 weight_reg = None                                                         # Remove weight regulatization in Pytorch as ProxSGD already has it implemented
 n_trials=60                                                               # Number of trials to search hyperparameter
 csv_filename='accuracy_comparison_basedon_thresholds.csv'                 # csv filename to save original model accuracy along with retraining accuracies.
-study_name='hyperparameter_cma_mu_search'                                  # Database filename to save history of earlier trials.
+study_name='hyperparameter_fixed_trial'                                  # Database filename to save history of earlier trials.
 accuracy_comparison_dir=result_dir+'accuracy_comparison/'+study_name+'/'  # Directory name to save csv file.
+

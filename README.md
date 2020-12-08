@@ -7,15 +7,15 @@ by *Yang Yang, Yaxiong Yuan, Avraan Chatzimichailidis, Ruud JG van Sloun, Lei Le
 
 This repository contains the simulations in Section 4.2.
 
-# Hyperparameter Search
-This branch is created for hyperparameter search using Covariance Matrix Adaptation evolution strategy..
+# Baseline
+This branch is created to train model with SGD optimizer.
 
 ## Setup
 Kindly follow the following steps to get experimental results.
 
-1. Install optuna in pytorch enviornment.
+1. Create pytorch enviornment.
 2. Update config.py with required settings.
-3. Run main_search_cma.py 
+3. Change variable 'lr' values for different learning rates and Run main_search_baseline.py 
 4. Results can be seen in directory mentioned in config.py
 
 

@@ -1,6 +1,5 @@
-# This file is used for hyperparameter search using CMA(covariance Matrix adaptation). 'config.py' consist all the variables information 
-# such as result directory, dataset, training epochs , retraining epochs, network and so on. To run the trials, create a study object,
-# which sets the direction of optimization ("maximize" or "minimize"), along with other settings.
+# This file is used to train model using SGD optimizer.'config.py' consist all the variables information 
+# such as result directory, dataset, training epochs , retraining epochs, network and so on.
 
 
 import numpy as np
@@ -8,23 +7,21 @@ import matplotlib.pyplot as plt
 import logging
 import sys
 import math
-import optuna
 import torch
 import torch.nn as nn
-import config_cma as config
+import config
 import csv
-from optuna.samplers import CmaEsSampler
 from os import path, makedirs
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from prune import prune_model
-from trainer_with_tensorboard import train, test    #train, test functions with tensorboard settings
+from trainer import train, test
 from ProxSGD_optimizer import ProxSGD
 from dataset import load_cifar100, load_mnist
 from models.densenet import densenet201
 from utils import set_logger, get_param_vec, compute_cdf, plot_learning_curve, print_nonzeros, save_checkpoint
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset, inset_axes
-from torch.utils.tensorboard import SummaryWriter
+
 from multiprocessing import Manager
 import random
 import time
@@ -40,9 +37,8 @@ def train_dense201(model,optimizer,run_id, result_dir,logger,original_model_acc1
     weights_cdf_y = []
     epochs_since_improvement = 0
     max_loss = math.inf
-    summary = SummaryWriter('runs/'+run_id+str(retrain))
 
-    loss, acc1, acc5, compression_rate = test(model, test_loader, logger,summary,0)
+    loss, acc1, acc5 = test(model, test_loader, logger)
     testarr1.append(acc1)
     testarr5.append(acc5)
 
@@ -59,19 +55,19 @@ def train_dense201(model,optimizer,run_id, result_dir,logger,original_model_acc1
     if not path.exists(path.dirname(train_dir)):   # Check if folder/Path for experiment result exists
         makedirs(path.dirname(train_dir))          # If not, then create one   
     
-    
+
     
     for epoch in range(num_epochs):
 
-        if epochs_since_improvement == 10 :
+        if epochs_since_improvement == 20 :
             break
         #train network
-        loss, l1it = train(model,train_data,config.weight_reg,logger,optimizer,epoch,retrain,summary)
+        loss, l1it = train(model,train_data,config.weight_reg,logger,optimizer,epoch,retrain)
         lossarr.append(loss)
         l1_loss.append(l1it)
         
         #test network and save testerrors
-        current_loss, acc1, acc5, compression_rate = test(model, test_loader, logger ,summary, epoch)
+        current_loss, acc1, acc5 = test(model, test_loader, logger)
         testarr1.append(acc1)
         testarr5.append(acc5)
         
@@ -111,7 +107,7 @@ def train_dense201(model,optimizer,run_id, result_dir,logger,original_model_acc1
 
     return model_path, acc1
 
-def objective(trial):
+def objective():
 
     #Build model
     if config.network=='densenet':
@@ -120,59 +116,33 @@ def objective(trial):
         model= MLP()
   
     model = model.cuda()
-    #Hyperparameters values using Optuna Library
-    rho_decay=0#trial.suggest_float('rho_decay', 0.5, 0.7, log=True)
-    epsilon_decay=0#trial.suggest_float('epsilon_decay', rho_decay, 0.7, log=True)
-    rho= trial.suggest_float('rho', 0.5, 1, log=True)
-    epsilon= trial.suggest_float('epsilon', 1e-5, 0.5, log=True)
-    mu= trial.suggest_float('mu', 1e-5, 1e-3, log=True)
-    run_id = "epsilon_"+str(epsilon)+"_epsilon_decay_"+str(epsilon_decay)+"_rho_"+str(rho)+"_rho_decay_"+str(rho_decay)+"_mu_"+str(mu)
-    result_dir= config.result_dir+'experiment_'+config.network+'_'+config.dataset+'_'+run_id+'/'
+    
+    result_dir= config.result_dir+'experiment_'+config.network+'_'+config.dataset+'_'+'baseline'+'/'
 
     #Initialization: save the initial weights and do an initial accuracy run
     if not path.exists(path.dirname(result_dir)):   # Check if folder/Path for experiment result exists
         makedirs(path.dirname(result_dir))          # If not, then create one   
 
     #Set logger
-    logger = set_logger(logger_name=result_dir+"logging_"+run_id)
-    logger.info("epsilon: "+str(epsilon)+", epsilon_decay: "+str(epsilon_decay)+", rho: "+str(rho)+", rho_decay: "+str(rho_decay)+", mu: "+str(mu))
+    logger = set_logger(logger_name=result_dir+"logging_"+'baseline')
     logger.info("Initial accuracies:")
     
     #Initialize the optimizer with the given parameters
-    optimizer = ProxSGD(model.parameters(), epsilon=epsilon, epsilon_decay=epsilon_decay, rho=rho, rho_decay=rho_decay, mu=mu)
-    
-    #Train the model using ProxSGD 
-    trained_model_path,trained_accuracy=train_dense201(model,optimizer,run_id, result_dir,logger, 0 , 0 , 0 , retrain=False)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    #Train the model using SGD 
+    trained_model_path,trained_accuracy=train_dense201(model,optimizer,'baseline', result_dir,logger, 0 , 0 , 0 , retrain=False)
     checkpoint = torch.load(trained_model_path)
     original_model=checkpoint['model']
     print('\nOriginal Model Evaluation: ')
-    original_model_loss, original_model_acc1, original_model_acc5, original_model_compression_rate = test(original_model,test_loader,logger,None,0)
+    original_model_loss, original_model_acc1, original_model_acc5 = test(original_model,test_loader,logger)
     
     result_accuracies_for_each_run=[run_id]
     result_accuracies_for_each_run.append(original_model_acc1)
-    
-    pruned_threshold= 2.0
-    pruned_model=prune_model(original_model,pruned_threshold)
-    print('\nPruned Model Evaluation for Threshold value: ', pruned_threshold)
-    pruned_model_loss, pruned_model_acc1, pruned_model_acc5 ,pruned_compression_rate= test(pruned_model,test_loader,logger,None,0)
 
-    #Retrain model
-    optimizer = torch.optim.SGD(pruned_model.parameters(), lr=0.01, momentum=0.9)
-    retrained_model_path,retrained_accuracy=train_dense201(pruned_model,optimizer,run_id, result_dir,logger, original_model_acc1, pruned_model_acc1, pruned_threshold ,retrain=True )
-    checkpoint = torch.load(retrained_model_path)
-    retrained_model=checkpoint['model']
-    print('\nRetrained Model Evaluation for Threshold value: ', pruned_threshold)
-    retrained_model_loss, retrained_model_acc1, retrained_model_acc5,retrained_compression_rate = test(retrained_model,test_loader,logger,None,0)
-        
-    result_accuracies_for_each_run.append(retrained_model_acc1)
-    result_accuracies_for_each_run.append(retrained_compression_rate)
-        
-
-    
         
     with open(config.accuracy_comparison_dir+config.csv_filename, 'a') as f:
         writer = csv.writer(f)
-        writer.writerow(result_accuracies_for_each_run)
+        writer.writerow(retraining_accuracies_for_each_run)
         f.close()
     
 
@@ -194,26 +164,4 @@ if __name__ == "__main__":
     if not path.exists(path.dirname(config.accuracy_comparison_dir)):   # Check if folder/Path for experiment result exists
         makedirs(path.dirname(config.accuracy_comparison_dir))          # If not, then create one   
     
-    with open(config.accuracy_comparison_dir+config.csv_filename, 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Run_id','Original_Accuracy','Retrain Accuracy with th2.0','compression_rate_2.0'])  # Write column names to the csv file.
-        f.close()              
-    
-    storage = optuna.storages.RDBStorage(url="sqlite:///"+config.study_name+".db",engine_kwargs={'pool_pre_ping': True,'connect_args': {'timeout': 10}}) #Database settings
-
-    study = optuna.create_study(study_name=config.study_name,storage=storage,direction='maximize', load_if_exists=True)   #Create study to maintain history in specified storage and other settings.
-    study = optuna.load_study(study_name=config.study_name, storage="sqlite:///"+config.study_name+".db") #Load existing study to use as history
-    
-    study.optimize(objective, n_trials=config.n_trials)#Optimize objective function in the direction we specified while creating study.
-
-    trial = study.best_trial   #save best trial among all trials.
-
-    print('Accuracy: {}'.format(trial.value))
-    print("Best hyperparameters: {}".format(trial.params))
-    print(trial.user_attrs)
-    optuna.visualization.plot_optimization_history(study)
-    optuna.visualization.plot_slice(study)
-    optuna.visualization.plot_contour(study, params=['epsilon','rho','mu'])
-
-    df = study.trials_dataframe(attrs=('number', 'value', 'params', 'state'))
-    print(df)
+    original_model_acc1=  objective()
