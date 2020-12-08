@@ -1,11 +1,13 @@
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+
 import matplotlib.pyplot as plt
+from torch.autograd import Variable
 from utils import  compute_cdf, print_nonzeros
+from IPython import display
 
 
-def train(model,train_data,weight_reg,logger,optimizer,epoch,retrain):
+def train(model,train_data,weight_reg,logger,optimizer,epoch,retrain,summary):
 
     if retrain== True:
         print('\nIn Retraining...')
@@ -15,7 +17,7 @@ def train(model,train_data,weight_reg,logger,optimizer,epoch,retrain):
     lossvals = []
     l1loss = []
     criterion = nn.CrossEntropyLoss()
-
+    num_batches = len(train_data)
     for batch_id, (data, target) in enumerate(train_data):
         data, target = Variable(data.cuda()), Variable(target.cuda())
 
@@ -43,36 +45,44 @@ def train(model,train_data,weight_reg,logger,optimizer,epoch,retrain):
                     mask = weight_copy.gt(0).float().cuda()
                     module.weight.grad.data.mul_(mask)
         optimizer.step()
-
+        step = epoch * num_batches + batch_id
+        
+                
         if batch_id % 20 == 0:
+            summary.add_scalar("Training Loss", loss.item(), step)
             logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch+1, batch_id * len(data), len(train_data.dataset),
                 100. * batch_id / len(train_data), loss.item()))
             
     return lossvals, l1loss
 
-def test(model,test_loader,logger):
+def test(model,test_loader,logger,summary,epoch):
     model.eval()
     test_loss = 0
     correct_1 = 0.0
     correct_5 = 0.0
     total = 0
     criterion = nn.CrossEntropyLoss()
-
+    num_batches = len(test_loader)
     with torch.no_grad():
-        for data, target in test_loader:
+        for batch_id,(data, target) in enumerate(test_loader):
             data, target = data.cuda(), target.cuda()
             output = model(data)
-            test_loss += criterion(output, target).item()
+            loss=criterion(output, target)
+            test_loss += loss
             _, pred = output.topk(5, 1, largest=True, sorted=True)
             target = target.view(target.size(0), -1).expand_as(pred)
             correct = pred.eq(target).float()
-
-            #compute top 5
+            
+            
             correct_5 += correct[:, :5].sum()
-
             #compute top1
             correct_1 += correct[:, :1].sum()
+            step = epoch * num_batches + batch_id
+            if batch_id % 20 == 0:
+                if summary!=None:
+                    summary.add_scalar("Test Loss", loss.item(), step)
+                
 
     test_loss /= len(test_loader.dataset)
     top1 = 100. * correct_1 / len(test_loader.dataset)
