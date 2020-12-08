@@ -6,3 +6,16 @@ This is the PyTorch implementation of the ProxSGD algorithm proposed in followin
 by *Yang Yang, Yaxiong Yuan, Avraan Chatzimichailidis, Ruud JG van Sloun, Lei Lei, and Symeon Chatzinotas.*
 
 This repository contains the simulations in Section 4.2.
+
+# Hyperparameter Search
+This branch is created for hyperparameter search using random search.
+
+## Setup
+Kindly follow the following steps to get experimental results.
+
+1. Install optuna in pytorch enviornment.
+2. Update config.py with required settings.
+3. Run main_random_search.py 
+4. Results can be seen in directory mentioned in config.py
+
+
