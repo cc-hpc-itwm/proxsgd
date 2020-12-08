@@ -8,14 +8,15 @@ by *Yang Yang, Yaxiong Yuan, Avraan Chatzimichailidis, Ruud JG van Sloun, Lei Le
 This repository contains the simulations in Section 4.2.
 
 # Hyperparameter Search
-This branch is created for Hyperparameter search using Tree Structured Parzen Estimator based on Bayes Theorem.
+This branch is created to check hyperparameter sensitivity using Tree Structured Parzen Estimator based on Bayes Theorem.
+First train using ProxSGD then prune with specific threshold and then intialize remaining weights with Xavier initialization to retrain the network using SGD optimizer.
 
 ## Setup
 Kindly follow the following steps to get experimental results.
 
 1. Install Optuna in pytorch enviornment.
 2. Update config.py with required settings.
-3. Run main_bayesian_search.py 
+3. Run main_search_retrain_with_random_initialization.py 
 4. Results can be seen in directory mentioned in config.py
 
 
