@@ -11,7 +11,7 @@ import math
 import optuna
 import torch
 import torch.nn as nn
-import config_cma as config
+import config as config
 import csv
 from optuna.samplers import CmaEsSampler
 from os import path, makedirs
